@@ -4,7 +4,6 @@ import (
 	"C"
 	"fmt"
 	"os"
-	"unicode/utf16"
 	"unsafe"
 
 	"github.com/go-ole/go-ole"
@@ -13,6 +12,7 @@ import (
 
 func main() {
 	pePath := os.Args[0]
+	pePath = "C:\\calc.exe"
 
 	var sa windows.SecurityAttributes
 	sa.Length = uint32(unsafe.Sizeof(sa))
@@ -20,9 +20,10 @@ func main() {
 
 	ole.CoInitialize(0)
 	defer ole.CoUninitialize()
+	exePath := windows.StringToUTF16Ptr(pePath)
 
 	handle, err := windows.CreateFile(
-		StringToUTF16Ptr(pePath),
+		exePath,
 		windows.GENERIC_READ,
 		windows.FILE_SHARE_READ,
 		&sa,
@@ -30,6 +31,7 @@ func main() {
 		windows.FILE_ATTRIBUTE_NORMAL,
 		0,
 	)
+	fmt.Println(pePath)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -67,7 +69,7 @@ func main() {
 
 }
 
-func StringToUTF16Ptr(str string) *uint16 {
-	wchars := utf16.Encode([]rune(str + "\x00"))
-	return &wchars[0]
-}
+// func StringToUTF16Ptr(str string) *uint16 {
+// 	wchars := utf16.Encode([]rune(str + "\x00"))
+// 	return &wchars[0]
+// }
