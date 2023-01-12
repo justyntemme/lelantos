@@ -47,16 +47,15 @@ func main() {
 	x := info.Size()
 	size := uint32(x)
 
-	// // Open the PE file
-	// peFile, err := os.Open(pePath)
-	// if err != nil {
-	// 	fmt.Printf("Failed to open PE file: %v\n", err)
-	// 	os.Exit(1)
-	// }
-	// defer peFile.Close()
+	// Create a file mapping object
+	mapping, err := windows.CreateFileMapping(handle, &sa, windows.PAGE_READONLY, 0, size, nil)
+	if err != nil {
+		fmt.Println("Error creating file mapping:", err)
+		return
+	}
 
 	// Map the file into memory
-	addr, err := windows.MapViewOfFile(handle, windows.FILE_MAP_READ, 0, 0, uintptr(size))
+	addr, err := windows.MapViewOfFile(mapping, windows.FILE_MAP_READ, 0, 0, uintptr(size))
 	if err != nil {
 		fmt.Println("Error mapping file:", err)
 		return
